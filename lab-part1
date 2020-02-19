@@ -472,3 +472,9 @@ nginx-deployment-b47dc74bd-m7gv4   0/1     ContainerCreating   0          27s   
 nginx-deployment-b47dc74bd-wthnk   0/1     ContainerCreating   0          27s   app=backendserver,env=project1,pod-template-hash=b47dc74bd
 
 $ Kubectl delete  pods --all 
+$ kubectl get -n dev pod --show-labels
+NAME                               READY   STATUS              RESTARTS   AGE   LABELS
+nginx-deployment-b47dc74bd-m7gv4   0/1     ContainerCreating   0          27s   app=backendserver,env=project1,pod-template-hash=b47dc74bd
+nginx-deployment-b47dc74bd-wthnk   0/1     ContainerCreating   0          27s   app=backendserver,env=project1,pod-template-hash=b47dc74bd
+$ Kubectl delete  pods -n dev --all 
+$ kubectl get -n dev pod --show-labels
