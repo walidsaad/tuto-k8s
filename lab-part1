@@ -471,4 +471,4 @@ NAME                               READY   STATUS              RESTARTS   AGE   
 nginx-deployment-b47dc74bd-m7gv4   0/1     ContainerCreating   0          27s   app=backendserver,env=project1,pod-template-hash=b47dc74bd
 nginx-deployment-b47dc74bd-wthnk   0/1     ContainerCreating   0          27s   app=backendserver,env=project1,pod-template-hash=b47dc74bd
 
-$ Kubectl delete -all pods
+$ Kubectl delete  pods --all 
