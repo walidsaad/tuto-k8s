@@ -46,7 +46,7 @@ walid@walidos:~/Mosaico3/servers/vbox$ chmod 600 ~/.ssh/config
 5-Eidt the /etc/hosts file
 $ sudo vim /etc/hosts
 127.0.0.1 master node1 node2
- 
+ 
 6-Install Kubernestes with Ansible
 
 $ cd ../../kubernetes
@@ -370,7 +370,7 @@ kubernetes-bootcamp   1         1         1            1           2m
 
 
 ********************************************************************
-     Lab5 Working with Namespaces and Labes
+     Lab5 Working with Namespaces and Labels
 ********************************************************************
 
 -Using template
