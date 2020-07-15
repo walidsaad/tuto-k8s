@@ -1,0 +1,169 @@
+**************************************************************************************************
+    Lab : Container-based Infrastructure with Docker Machine 
+**************************************************************************************************
+
+Docker Machine is a tool for provisioning and managing your Dockerized hosts (hosts with Docker Engine on them).
+
+
+3.1.	Install Docker Machine tools	
+
+•	Install Docker Machine for Windows
+$ base=https://github.com/docker/machine/releases/download/v0.16.0 && mkdir -p "$HOME/bin" && curl –L $base/docker-machine-Windows-x86_64.exe > "$HOME/bin/docker-machine.exe" && chmod +x "$HOME/bin/docker-machine.exe"
+$ docker-machine.exe --version
+docker-machine.exe version 0.16.0, build 702c267f
+
+
+For more details https://docs.docker.com/machine/install-machine/
+•	Install Docker Machine for Linux
+$ base=https://github.com/docker/machine/releases/download/v0.16.0 && curl –L $base/docker-machine-$(uname -s)-$(uname -m) >/tmp/docker-machine && sudo install /tmp/docker-machine /usr/local/bin/docker-machine
+$ docker-machine --help
+Usage: docker-machine [OPTIONS] COMMAND [arg...]
+
+Create and manage machines running Docker.
+
+Version: 0.12.1, build c8b17e8
+
+Author:
+  Docker Machine Contributors - <https://github.com/docker/machine>
+
+Options:
+  --debug, -D                                           Enable debug mode
+  --storage-path, -s "/home/grid02/.docker/machine"     Configures storage path [$MACHINE_STORAGE_PATH]
+  --tls-ca-cert                                         CA to verify remotes against [$MACHINE_TLS_CA_CERT]
+  --tls-ca-key                                          Private key to generate certificates [$MACHINE_TLS_CA_KEY]
+  --tls-client-cert                                     Client cert to use for TLS [$MACHINE_TLS_CLIENT_CERT]
+  --tls-client-key                                      Private key used in client TLS auth [$MACHINE_TLS_CLIENT_KEY]
+  --github-api-token                                    Token to use for requests to the Github API [$MACHINE_GITHUB_API_TOKEN]
+  --native-ssh                                          Use the native (Go-based) SSH implementation. [$MACHINE_NATIVE_SSH]
+  --bugsnag-api-token                                   BugSnag API token for crash reporting [$MACHINE_BUGSNAG_API_TOKEN]
+  --help, -h                                            show help
+  --version, -v                                         print the version
+
+Commands:
+  active                Print which machine is active
+  config                Print the connection config for machine
+  create                Create a machine
+  env                   Display the commands to set up the environment for the Docker client
+  inspect               Inspect information about a machine
+  ip                    Get the IP address of a machine
+  kill                  Kill a machine
+  ls                    List machines
+  provision             Re-provision existing machines
+  regenerate-certs      Regenerate TLS Certificates for a machine
+  restart               Restart a machine
+  rm                    Remove a machine
+  ssh                   Log into or run a command on a machine with SSH.
+  scp                   Copy files between machines
+  start                 Start a machine
+  status                Get the status of a machine
+  stop                  Stop a machine
+  upgrade               Upgrade a machine to the latest version of Docker
+  url                   Get the URL of a machine
+  version               Show the Docker Machine version or a machine docker version
+  help                  Shows a list of commands or help for one command
+
+Run 'docker-machine COMMAND --help' for more information on a command.
+
+•	Or download the Docker Machine binary directly from:
+
+https://github.com/docker/machine/releases/
+
+3.2.	VirtualBox driver		
+3.2.1.	Linux machine  
+$ docker-machine create -d virtualbox test
+Running pre-create checks...
+(test) No default Boot2Docker ISO found locally, downloading the latest release...
+(test) Latest release for github.com/boot2docker/boot2docker is v18.06.0-ce
+(test) Downloading /home/walid/.docker/machine/cache/boot2docker.iso from https://github.com/boot2docker/boot2docker/releases/download/v18.06.0-ce/boot2docker.iso...
+(test) 0%....10%....20%....30%....40%....50%....60%....70%....80%....90%....100%
+Creating machine...
+(test) Copying /home/walid/.docker/machine/cache/boot2docker.iso to /home/walid/.docker/machine/machines/test/boot2docker.iso...
+(test) Creating VirtualBox VM...
+(test) Creating SSH key...
+(test) Starting the VM...
+(test) Check network to re-create if needed...
+(test) Waiting for an IP...
+Waiting for machine to be running, this may take a few minutes...
+Detecting operating system of created instance...
+Waiting for SSH to be available...
+Detecting the provisioner...
+Provisioning with boot2docker...
+Copying certs to the local machine directory...
+Copying certs to the remote machine...
+Setting Docker configuration on the remote daemon...
+Checking connection to Docker...
+Docker is up and running!
+To see how to connect your Docker Client to the Docker Engine running on this virtual machine, run: docker-machine env test
+
+$ docker-machine ls
+NAME         ACTIVE   DRIVER       STATE     URL                         SWARM   DOCKER        ERRORS
+test         -        virtualbox   Running   tcp://192.168.99.100:2376           v18.06.0-ce   
+
+$ docker-machine ssh test
+                        ##         .
+                  ## ## ##        ==
+               ## ## ## ## ##    ===
+           /"""""""""""""""""\___/ ===
+      ~~~ {~~ ~~~~ ~~~ ~~~~ ~~~ ~ /  ===- ~~~
+           \______ o           __/
+             \    \         __/
+              \____\_______/
+ _                 _   ____     _            _
+| |__   ___   ___ | |_|___ \ __| | ___   ___| | _____ _ __
+| '_ \ / _ \ / _ \| __| __) / _` |/ _ \ / __| |/ / _ \ '__|
+| |_) | (_) | (_) | |_ / __/ (_| | (_) | (__|   <  __/ |
+|_.__/ \___/ \___/ \__|_____\__,_|\___/ \___|_|\_\___|_|
+Boot2Docker version 18.06.0-ce, build HEAD : 1f40eb2 - Thu Jul 19 18:48:09 UTC 2018
+Docker version 18.06.0-ce, build 0ffa825
+
+docker@test:~$ docker run -it ubuntu
+Unable to find image 'ubuntu:latest' locally
+latest: Pulling from library/ubuntu
+c64513b74145: Pull complete 
+01b8b12bad90: Pull complete 
+c5d85cf7a05f: Pull complete 
+b6b268720157: Pull complete 
+e12192999ff1: Pull complete 
+Digest: sha256:3f119dc0737f57f704ebecac8a6d8477b0f6ca1ca0332c7ee1395ed2c6a82be7
+Status: Downloaded newer image for ubuntu:latest
+root@6ac380f5489a:/# ls    
+bin  boot  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
+root@6ac380f5489a:/#
+
+docker@test:~$ docker run -dt --name c1 ubuntu
+6323ce947b711628c341d182b57c7dd5ec6b27dc3b20863ef10b6d5f9e1b6af9
+docker@test:~$ docker ps
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+6323ce947b71        ubuntu              "/bin/bash"         4 seconds ago       Up 3 seconds                            c1
+
+docker@test:~$exit
+
+$ eval $(docker-machine env test)
+$ docker ps
+CONTAINER ID        IMAGE                   COMMAND                  CREATED             STATUS              PORTS                            NAMES
+9643ef87cf33        phpmyadmin/phpmyadmin   "/run.sh superviso..."   17 hours ago        Up 17 hours         9000/tcp, 0.0.0.0:8081->80/tcp   php_admin
+7c09b624bfca        wordpress:latest        "docker-entrypoint..."   18 hours ago        Up 18 hours         0.0.0.0:8080->80/tcp             my_admin
+94faa4337cfe        mysql:5.7               "docker-entrypoint..."   18 hours ago        Up 18 hours         3306/tcp                         my_mysql
+$ docker stop $(docker ps -a -q)
+9643ef87cf33
+7c09b624bfca
+94faa4337cfe
+$ docker ps
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+$ docker-machine stop test
+Stopping "test"...
+Machine "test" was stopped.
+
+3.2.2.	Windows machine  
+
+•	Using Git Bash
+$ docker-machine.exe create -d virtualbox test
+$ docker-machine.exe ls
+NAME         ACTIVE   DRIVER       STATE     URL                         SWARM   DOCKER        ERRORS
+test         -        virtualbox   Running   tcp://192.168.99.100:2376           v18.06.0-ce 
+$ docker-machine.exe ssh test
+docker@test:~$ docker run -dt --name c1 ubuntu
+6323ce947b711628c341d182b57c7dd5ec6b27dc3b20863ef10b6d5f9e1b6af9
+docker@test:~$exit
+$ eval $(docker-machine.exe env test)
+$ docker ps
