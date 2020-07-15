@@ -1,7 +1,68 @@
 ********************************************************************
      Lab6 Manage Deployments
 ********************************************************************
+-Create deployment using CLI
+Using run option (deprecated!!)
+$ kubectl run kubernetes-bootcamp --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=808
+kubectl run --generator=deployment/apps.v1 is DEPRECATED and will be removed in a future version. Use kubectl run --generator=run-pod/v1 or kubectl create instead.
+deployment.apps/kubernetes-bootcamp created
 
+Using create Option
+$ kubectl create deployment kubernetes-bootcamp --image=gcr.io/google-samples/kubernetes-bootcamp:v1
+deployment.apps/kubernetes-bootcamp created
+$ kubectl get deployments
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+kubernetes-bootcamp   1/1     1            1           4m7s
+$ kubectl get pods
+NAME                                   READY   STATUS    RESTARTS   AGE
+kubernetes-bootcamp-69fbc6f4cf-gt2jm   1/1     Running   0          5m7s
+$
+
+We should have 1 Pod. If not, run the command again. This shows:
+
+-->NAME lists the names of the Deployments in the cluster.
+-->READY shows the ratio of CURRENT/DESIRED replicas
+-->UP-TO-DATE displays the number of replicas that have been updated to achieve the desired state.
+-->AVAILABLE displays how many replicas of the application are available to your users.
+-->AGE displays the amount of time that the application has been running.
+
+$ kubectl describe deployments kubernetes-bootcamp
+Name:                   kubernetes-bootcamp
+Namespace:              default
+CreationTimestamp:      Sun, 07 Jun 2020 12:24:13 +0000
+Labels:                 app=kubernetes-bootcamp
+Annotations:            deployment.kubernetes.io/revision: 1
+Selector:               app=kubernetes-bootcamp
+Replicas:               1 desired | 1 updated | 1 total | 1 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  app=kubernetes-bootcamp
+  Containers:
+   kubernetes-bootcamp:
+    Image:        gcr.io/google-samples/kubernetes-bootcamp:v1
+    Port:         <none>
+    Host Port:    <none>
+    Environment:  <none>
+    Mounts:       <none>
+  Volumes:        <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   kubernetes-bootcamp-69fbc6f4cf (1/1 replicas created)
+Events:
+  Type    Reason             Age   From                   Message
+  ----    ------             ----  ----                   -------
+  Normal  ScalingReplicaSet  34s   deployment-controller  Scaled up replica set kubernetes-bootcamp-69fbc6f4cf to 1
+$
+$ kubectl get rs
+NAME                             DESIRED   CURRENT   READY   AGE
+kubernetes-bootcamp-69fbc6f4cf   1         1         1       2m19s
+$
 -Create  deployment using YAML
 $ cat deployment.yaml
 apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
@@ -53,6 +114,7 @@ spec:
 $ kubectl apply -f deployment.yaml
 $ kubectl get pods -l app=nginx
 $ kubectl describe deployment nginx-deployment
+
 -Generate Deployment Description
 $ kubectl create deployment my-nginx --image nginx -o yaml --dry-run
 apiVersion: apps/v1
@@ -98,18 +160,24 @@ Type values and their behaviors are:
 
 
 1-Create Services and expose deployment
+vagrant@master:~$ kubectl delete deployments --all
+vagrant@master:~$ kubectl run kubernetes-bootcamp --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080
+vagrant@master:~$ kubectl create deployment kubernetes-bootcamp --image=gcr.io/google-samples/kubernetes-bootcamp:v1
 
-$ kubectl run kubernetes-bootcamp --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080
 
-vagrant@master:~$ kubectl get services
-NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
-kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   2d
 vagrant@master:~$ kubectl get deployments
-NAME                  DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-kubernetes-bootcamp   1         1         1            1           3h
-
-vagrant@master:~$ kubectl expose deployment/kubernetes-bootcamp --type="NodePort" --port 8080
-service/kubernetes-bootcamp exposed
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+kubernetes-bootcamp   1/1     1            1           11s
+$
+vagrant@master:~$ $ kubectl get services
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   11m
+$
+vagrant@master:~$ kubectl get services
+NAME                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+kubernetes            ClusterIP   10.96.0.1       <none>        443/TCP          12m
+kubernetes-bootcamp   NodePort    10.102.86.175   <none>        8080:30652/TCP   23s
+$
 
 vagrant@master:~$ kubectl get services
 NAME                  TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
@@ -122,17 +190,20 @@ Labels:                   run=kubernetes-bootcamp
 Annotations:              <none>
 Selector:                 run=kubernetes-bootcamp
 Type:                     NodePort
-IP:                       10.106.4.223
+IP:                       10.102.86.175
 Port:                     <unset>  8080/TCP
 TargetPort:               8080/TCP
-NodePort:                 <unset>  32156/TCP
-Endpoints:                10.40.0.1:8080
+NodePort:                 <unset>  30652/TCP
+Endpoints:                172.18.0.4:8080
 Session Affinity:         None
 External Traffic Policy:  Cluster
 Events:                   <none>
+$                   <none>
 
 vagrant@master:~$ export NODE_PORT=$(kubectl get services/kubernetes-bootcamp -o go-template='{{(index .spec.ports 0).nodePort}}')
-
+vagrant@master:~$ echo NODE_PORT=$NODE_PORT
+NODE_PORT=30652
+$
 vagrant@master:~$ ifconfig 
 My IP is 10.0.0.10
 vagrant@master:~$ curl 10.0.0.10:$NODE_PORT
@@ -281,49 +352,68 @@ https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer
 ********************************************************************
 
 1-Scaling an application
+vagrant@master:~$ kubectl delete deployments --all
 
-$ kubectl run kubernetes-bootcamp --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080
+vagrant@master:~$ kubectl run kubernetes-bootcamp --image=gcr.io/google-samples/kubernetes-bootcamp:v1 --port=8080
+vagrant@master:~$ kubectl create deployment kubernetes-bootcamp --image=gcr.io/google-samples/kubernetes-bootcamp:v1
 
-vagrant@master:~$ kubectl get deployment
-NAME                  DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-kubernetes-bootcamp   1         1         1            1           7h
-vagrant@master:~$ kubectl scale deployments/kubernetes-bootcamp --replicas=3
-deployment.extensions/kubernetes-bootcamp scaled
-vagrant@master:~$ kubectl get deployment
-NAME                  DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-kubernetes-bootcamp   3         3         3            2           7h
+vagrant@master:~$ kubectl get deployments
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+kubernetes-bootcamp   1/1     1            1           8m24s
+$
+vagrant@master:~$ kubectl get rs
+NAME                             DESIRED   CURRENT   READY   AGE
+kubernetes-bootcamp-765bf4c7b4   1         1         1       10m
+vagrant@master:~$
+Two important columns of this command are:
 
-The DESIRED state is showing the configured number of replicas
+-->DESIRED displays the desired number of replicas of the application, 
+which you define when you create the Deployment. This is the desired state.
+-->CURRENT displays how many replicas are currently running.
 
-The CURRENT state show how many replicas are running now
-
-The UP-TO-DATE is the number of replicas that were updated to match the desired (configured) state
-
-The AVAILABLE state shows how many replicas are actually AVAILABLE to the users
-
-
-vagrant@master:~$ kubectl get pods
-NAME                                  READY     STATUS              RESTARTS   AGE
-kubernetes-bootcamp-69bf88c8c-5x9x9   1/1       Running             0          7h
-
-
-
-kubernetes-bootcamp-69bf88c8c-k9jl7   1/1       Running             0          11s
-kubernetes-bootcamp-69bf88c8c-qsg95   0/1       ContainerCreating   0          11s
-
-vagrant@master:~$ kubectl get pods
-NAME                                  READY     STATUS              RESTARTS   AGE
-kubernetes-bootcamp-69bf88c8c-5x9x9   1/1       Running             0          7h
-kubernetes-bootcamp-69bf88c8c-k9jl7   1/1       Running             0          15s
-kubernetes-bootcamp-69bf88c8c-qsg95   0/1       ContainerCreating   0          15s
-
+vagrant@master:~$ kubectl scale deployments/kubernetes-bootcamp --replicas=4
+deployment.apps/kubernetes-bootcamp scaled
+vagrant@master:~$ kubectl get deployments
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+kubernetes-bootcamp   4/4     4            4           13m
 vagrant@master:~$ kubectl get pods -o wide
-NAME                                  READY     STATUS             RESTARTS   AGE       IP          NODE      NOMINATED NODE
-kubernetes-bootcamp-69bf88c8c-5x9x9   1/1       Running            0          7h        10.40.0.1   node1     <none>
-kubernetes-bootcamp-69bf88c8c-k9jl7   1/1       Running            0          27s       10.40.0.2   node1     <none>
-kubernetes-bootcamp-69bf88c8c-qsg95   1/1       Running            0          27s       10.32.0.5   node2     <none>
+NAME                                   READY   STATUS    RESTARTS   AGE   IP           NODE      NOMINATED NODE   READINESS GATES
+kubernetes-bootcamp-765bf4c7b4-6stxk   1/1     Running   0          12s   172.18.0.7   minikube   <none>           <none>
+kubernetes-bootcamp-765bf4c7b4-j6p7f   1/1     Running   0          13m   172.18.0.3   minikube   <none>           <none>
+kubernetes-bootcamp-765bf4c7b4-k4z7r   1/1     Running   0          12s   172.18.0.8   minikube   <none>           <none>
+kubernetes-bootcamp-765bf4c7b4-zdjd4   1/1     Running   0          12s   172.18.0.9   minikube   <none>           <none>
+vagrant@master:~$ kubectl get rs
+NAME                             DESIRED   CURRENT   READY   AGE
+kubernetes-bootcamp-765bf4c7b4   4         4         4       13m
+$
 
-$ kubectl expose deployment/kubernetes-bootcamp --type="NodePort" --port 8080
+vagrant@master:~$ kubectl get svc
+NAME                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+kubernetes            ClusterIP   10.96.0.1        <none>        443/TCP          17m
+kubernetes-bootcamp   NodePort    10.108.164.126   <none>        8080:32210/TCP   17m
+$
+
+vagrant@master:~$ kubectl describe services/kubernetes-bootcamp
+Name:                     kubernetes-bootcamp
+Namespace:                default
+Labels:                   run=kubernetes-bootcamp
+Annotations:              <none>
+Selector:                 run=kubernetes-bootcamp
+Type:                     NodePort
+IP:                       10.108.164.126
+Port:                     <unset>  8080/TCP
+TargetPort:               8080/TCP
+NodePort:                 <unset>  32210/TCP
+Endpoints:                172.18.0.3:8080,172.18.0.7:8080,172.18.0.8:8080 + 1 more...
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Events:                   <none>
+$ kubectl get srv
+error: the server doesn't have a resource type "srv"
+
+
+
+vagrant@master:~$ kubectl expose deployment/kubernetes-bootcamp --type="NodePort" --port 8080
 
 vagrant@master:~$ kubectl describe services/kubernetes-bootcamp
 Name:                     kubernetes-bootcamp
@@ -342,94 +432,194 @@ External Traffic Policy:  Cluster
 Events:                   <none>
 
 vagrant@master:~$ export NODE_PORT=$(kubectl get services/kubernetes-bootcamp -o go-template='{{(index .spec.ports 0).nodePort}}')
+vagrant@master:~$ export NODE_PORT=$(kubectl get services/kubernetes-bootcamp -o go-template='{{(index .spec.ports 0).nodePort}}')
+vagrant@master:~$ echo NODE_PORT=$NODE_PORT
+NODE_PORT=32210
+$
 vagrant@master:~$ curl 10.0.0.10:$NODE_PORT
-Hello Kubernetes bootcamp! | Running on: kubernetes-bootcamp-69bf88c8c-k9jl7 | v=1
+Hello Kubernetes bootcamp! | Running on: kubernetes-bootcamp-765bf4c7b4-zdjd4 | v=1
+$
 
+2-Scale down
+vagrant@master:~$ kubectl scale deployments/kubernetes-bootcamp --replicas=2
+deployment.apps/kubernetes-bootcamp scaled
+vagrant@master:~$ kubectl get deployments
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+kubernetes-bootcamp   2/2     2            2           22m
+vagrant@master:~$ kubectl get pods -o wide
+NAME                                   READY   STATUS        RESTARTS   AGE    IP           NODE       NOMINATED NODE   READINESS GATES
+kubernetes-bootcamp-765bf4c7b4-6stxk   1/1     Terminating   0          9m6s   172.18.0.7   minikube   <none>           <none>
+kubernetes-bootcamp-765bf4c7b4-j6p7f   1/1     Running       0          22m    172.18.0.3   minikube   <none>           <none>
+kubernetes-bootcamp-765bf4c7b4-k4z7r   1/1     Running       0          9m6s   172.18.0.8   minikube   <none>           <none>
+kubernetes-bootcamp-765bf4c7b4-zdjd4   1/1     Terminating   0          9m6s   172.18.0.9   minikube   <none>           <none>
+vagrant@master:~$ kubectl get pods -o wide
+NAME                                   READY   STATUS        RESTARTS   AGE     IPNODE       NOMINATED NODE   READINESS GATES
+kubernetes-bootcamp-765bf4c7b4-6stxk   1/1     Terminating   0          9m13s   172.18.0.7minikube   <none>           <none>
+kubernetes-bootcamp-765bf4c7b4-j6p7f   1/1     Running       0          22m     172.18.0.3minikube   <none>           <none>
+kubernetes-bootcamp-765bf4c7b4-k4z7r   1/1     Running       0          9m13s   172.18.0.8minikube   <none>           <none>
+kubernetes-bootcamp-765bf4c7b4-zdjd4   1/1     Terminating   0          9m13s   172.18.0.9minikube   <none>           <none>
+vagrant@master:~$ kubectl get pods -o wide
+NAME                                   READY   STATUS    RESTARTS   AGE     IP           NODE       NOMINATED NODE   READINESS GATES
+kubernetes-bootcamp-765bf4c7b4-j6p7f   1/1     Running   0          22m     172.18.0.3   minikube   <none>           <none>
+kubernetes-bootcamp-765bf4c7b4-k4z7r   1/1     Running   0          9m33s   172.18.0.8   minikube   <none>           <none>
+$
 
-2-Delete Pods
-vagrant@master:~$ kubectl delete pods kubernetes-bootcamp-69bf88c8c-5x9x9
+3-Delete Pods
+vagrant@master:~$ kubectl delete pods kubernetes-bootcamp-765bf4c7b4-2xkmz
 pod "kubernetes-bootcamp-69bf88c8c-5x9x9" deleted
 -->Aussitôt supprimé, aussitôt recréé ! 
 
+vagrant@master:~$ kubectl delete pods kubernetes-bootcamp-765bf4c7b4-2xkmz
+pod "kubernetes-bootcamp-765bf4c7b4-2xkmz" deleted
 vagrant@master:~$ kubectl get pods -o wide
-NAME                                  READY     STATUS        RESTARTS   AGE       IP          NODE      NOMINATED NODE
-kubernetes-bootcamp-69bf88c8c-5x9x9   0/1       Terminating   0          7h        <none>      node1     <none>
-kubernetes-bootcamp-69bf88c8c-jkv7s   1/1       Running       0          34s       10.40.0.3   node1     <none>
-kubernetes-bootcamp-69bf88c8c-k9jl7   1/1       Running       0          32m       10.40.0.2   node1     <none>
-kubernetes-bootcamp-69bf88c8c-qsg95   1/1       Running       0          32m       10.32.0.5   node2     <none>
-myapp-pod                             1/1       Running       106        23h       10.32.0.4   node2     <none>
+NAME                                   READY   STATUS        RESTARTS   AGE    IP NODE       NOMINATED NODE   READINESS GATES
+kubernetes-bootcamp-765bf4c7b4-2xkmz   1/1     Terminating   0          59s    172.18.0.7 minikube   <none>           <none>
+kubernetes-bootcamp-765bf4c7b4-5vrq6   1/1     Running       0          59s    172.18.0.8 minikube   <none>           <none>
+
 vagrant@master:~$ kubectl get pods -o wide
-NAME                                  READY     STATUS    RESTARTS   AGE       IP          NODE      NOMINATED NODE
-kubernetes-bootcamp-69bf88c8c-jkv7s   1/1       Running   0          45s       10.40.0.3   node1     <none>
-kubernetes-bootcamp-69bf88c8c-k9jl7   1/1       Running   0          32m       10.40.0.2   node1     <none>
-kubernetes-bootcamp-69bf88c8c-qsg95   1/1       Running   0          32m       10.32.0.5   node2     <none>
-myapp-pod                             1/1       Running   106        23h       10.32.0.4   node2     <none>
-vagrant@master:~$
+NAME                                   READY   STATUS    RESTARTS   AGE    IP            NODE       NOMINATED NODE   READINESS GATES
+kubernetes-bootcamp-765bf4c7b4-5vrq6   1/1     Running   0          75s    172.18.0.8    minikube   <none>           <none>
+kubernetes-bootcamp-765bf4c7b4-6xhx8   1/1     Running   0          75s    172.18.0.9    minikube   <none>           <none>
+$
 
 ********************************************************************
      Lab9 Performing a Rolling Update
 ********************************************************************
+Rolling updates allow the following actions:
 
--Update the version of the app (V1 to V2)
+-->Promote an application from one environment to another (via container image updates)
+-->Rollback to previous versions
+-->Continuous Integration and Continuous Delivery of applications with zero downtime
 
-vagrant@master:~$ kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=jocatalin/kubernetes-bootcamp:v2
-deployment.extensions/kubernetes-bootcamp image updated
+1-Update the version of the app (V1 to V2)
+
+vagrant@master:~$ kubectl delete deployments --all
+vagrant@master:~$ kubectl create deployment kubernetes-bootcamp --image=gcr.io/google-samples/kubernetes-bootcamp:v1
+vagrant@master:~$ kubectl scale deployments/kubernetes-bootcamp --replicas=4
+deployment.apps/kubernetes-bootcamp scaled
 vagrant@master:~$ kubectl get pods
-NAME                                  READY     STATUS              RESTARTS   AGE
-kubernetes-bootcamp-69bf88c8c-jkv7s   1/1       Running             0          27m
-kubernetes-bootcamp-69bf88c8c-k9jl7   1/1       Running             0          58m
-kubernetes-bootcamp-69bf88c8c-qsg95   1/1       Running             0          58m
-kubernetes-bootcamp-b9cdd8865-r55qn   0/1       ContainerCreating   0          3s
-myapp-pod                             1/1       Running             109        1d
+NAME                                   READY   STATUS    RESTARTS   AGE
+kubernetes-bootcamp-765bf4c7b4-8s9tp   1/1     Running   0          19m
+kubernetes-bootcamp-765bf4c7b4-qbjtk   1/1     Running   0          19m
+kubernetes-bootcamp-765bf4c7b4-smr9p   1/1     Running   0          19m
+kubernetes-bootcamp-765bf4c7b4-zmqf5   1/1     Running   0          19m
+$
+
+$ kubectl describe pods
+Name:         kubernetes-bootcamp-765bf4c7b4-8s9tp
+Namespace:    default
+Priority:     0
+Node:         minikube/172.17.0.41
+Start Time:   Sun, 07 Jun 2020 16:01:18 +0000
+Labels:       pod-template-hash=765bf4c7b4
+              run=kubernetes-bootcamp
+Annotations:  <none>
+Status:       Running
+IP:           172.18.0.3
+IPs:
+  IP:           172.18.0.3
+Controlled By:  ReplicaSet/kubernetes-bootcamp-765bf4c7b4
+Containers:
+  kubernetes-bootcamp:
+    Container ID:   docker://654460c84fcf2c8f29b0edde2313cd415329e80c8af8317547b4d5cca03d34f3
+    Image:          gcr.io/google-samples/kubernetes-bootcamp:v1
+    Image ID:       docker-pullable://jocatalin/kubernetes-bootcamp@sha256:0d6b8ee63bb57c5f5b6156f446b3bc3b3c143d233037f3a2f00e279c8fcc64af
+    Port:           8080/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Sun, 07 Jun 2020 16:01:21 +0000
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-xcsrc (ro)
+Conditions:
+  Type              Status
+  Initialized       True
+  Ready             True
+  ContainersReady   True
+  PodScheduled      True
+Volumes:
+  default-token-xcsrc:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-xcsrc
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  <none>
+Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
+                 node.kubernetes.io/unreachable:NoExecute for 300s
+Events:
+  Type     Reason            Age                From               Message
+  ----     ------            ----               ----               -------
+  Warning  FailedScheduling  19m (x2 over 19m)  default-scheduler  0/1 nodes are available:1 node(s) had taints that the pod didn't tolerate.
+  Normal   Scheduled         19m                default-scheduler  Successfully assigned default/kubernetes-bootcamp-765bf4c7b4-8s9tp to minikube
+  Normal   Pulled            19m                kubelet, minikube  Container image "gcr.io/google-samples/kubernetes-bootcamp:v1" already present on machine
+  Normal   Created           19m                kubelet, minikube  Created container kubernetes-bootcamp
+  Normal   Started           19m                kubelet, minikube  Started container kubernetes-bootcamp
+
+
+vagrant@master:~$ $ kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=jocatalin/kubernetes-bootcamp:v2
+deployment.apps/kubernetes-bootcamp image updated
 vagrant@master:~$ kubectl get pods
-NAME                                  READY     STATUS              RESTARTS   AGE
-kubernetes-bootcamp-69bf88c8c-jkv7s   1/1       Terminating         0          27m
-kubernetes-bootcamp-69bf88c8c-k9jl7   1/1       Running             0          58m
-kubernetes-bootcamp-69bf88c8c-qsg95   1/1       Running             0          58m
-kubernetes-bootcamp-b9cdd8865-bzqdf   0/1       ContainerCreating   0          0s
-kubernetes-bootcamp-b9cdd8865-r55qn   1/1       Running             0          6s
-myapp-pod                             1/1       Running             109        1d
+NAME                                   READY   STATUS        RESTARTS   AGE
+kubernetes-bootcamp-765bf4c7b4-8s9tp   1/1     Terminating   0          24m
+kubernetes-bootcamp-765bf4c7b4-qbjtk   1/1     Running       0          24m
+kubernetes-bootcamp-765bf4c7b4-smr9p   1/1     Running       0          24m
+kubernetes-bootcamp-765bf4c7b4-zmqf5   1/1     Terminating   0          24m
+kubernetes-bootcamp-7d6f8694b6-4cjdr   1/1     Running       0          2s
+kubernetes-bootcamp-7d6f8694b6-7gwqp   1/1     Running       0          2s
+vagrant@master:~$ kubectl get pods
+NAME                                   READY   STATUS        RESTARTS   AGE
+kubernetes-bootcamp-765bf4c7b4-8s9tp   1/1     Terminating   0          24m
+kubernetes-bootcamp-765bf4c7b4-qbjtk   1/1     Terminating   0          24m
+kubernetes-bootcamp-765bf4c7b4-smr9p   1/1     Terminating   0          24m
+kubernetes-bootcamp-765bf4c7b4-zmqf5   1/1     Terminating   0          24m
+kubernetes-bootcamp-7d6f8694b6-2h4c8   1/1     Running       0          9s
+kubernetes-bootcamp-7d6f8694b6-4cjdr   1/1     Running       0          11s
+kubernetes-bootcamp-7d6f8694b6-7gwqp   1/1     Running       0          11s
+kubernetes-bootcamp-7d6f8694b6-kv4cp   1/1     Running       0          9s
 
 vagrant@master:~$ kubectl get pods
-NAME                                  READY     STATUS        RESTARTS   AGE
-kubernetes-bootcamp-69bf88c8c-jkv7s   1/1       Terminating   0          27m
-kubernetes-bootcamp-69bf88c8c-k9jl7   1/1       Terminating   0          59m
-kubernetes-bootcamp-69bf88c8c-qsg95   1/1       Terminating   0          59m
-kubernetes-bootcamp-b9cdd8865-bzqdf   1/1     
-kubernetes-bootcamp-69bf88c8c-qsg95   1/1       Running             0          58m
-kubernetes-bootcamp-b9cdd8865-bzqdf   0/1       ContainerCreating   0          0s
-kubernetes-bootcamp-b9cdd8865-r55qn   1/1       Running             0          6s
-myapp-pod                             1/1       Running             109        1d
-
+NAME                                   READY   STATUS        RESTARTS   AGE
+kubernetes-bootcamp-765bf4c7b4-8s9tp   0/1     Terminating   0          24m
+kubernetes-bootcamp-765bf4c7b4-qbjtk   0/1     Terminating   0          24m
+kubernetes-bootcamp-765bf4c7b4-smr9p   0/1     Terminating   0          24m
+kubernetes-bootcamp-7d6f8694b6-2h4c8   1/1     Running       0          41s
+kubernetes-bootcamp-7d6f8694b6-4cjdr   1/1     Running       0          43s
+kubernetes-bootcamp-7d6f8694b6-7gwqp   1/1     Running       0          43s
+kubernetes-bootcamp-7d6f8694b6-kv4cp   1/1     Running       0          41s
 vagrant@master:~$ kubectl get pods
-NAME                                  READY     STATUS        RESTARTS   AGE
-kubernetes-bootcamp-69bf88c8c-jkv7s   1/1       Terminating   0          27m
-kubernetes-bootcamp-69bf88c8c-k9jl7   1/1       Terminating   0          59m
-kubernetes-bootcamp-69bf88c8c-qsg95   1/1       Terminating   0          59m
-kubernetes-bootcamp-b9cdd8865-bzqdf   1/1       Running       0          18s
-kubernetes-bootcamp-b9cdd8865-jrkdm   1/1       Running       0          7s
-kubernetes-bootcamp-b9cdd8865-r55qn   1/1       Running       0          24s
-myapp-pod                             1/1       Running       109        1d
+NAME                                   READY   STATUS    RESTARTS   AGE
+kubernetes-bootcamp-7d6f8694b6-2h4c8   1/1     Running   0          52s
+kubernetes-bootcamp-7d6f8694b6-4cjdr   1/1     Running   0          54s
+kubernetes-bootcamp-7d6f8694b6-7gwqp   1/1     Running   0          54s
+kubernetes-bootcamp-7d6f8694b6-kv4cp   1/1     Running   0          52s
 
-vagrant@master:~$ kubectl get pods
-NAME                                  READY     STATUS        RESTARTS   AGE
-kubernetes-bootcamp-69bf88c8c-jkv7s   0/1       Terminating   0          27m
-kubernetes-bootcamp-69bf88c8c-k9jl7   1/1       Terminating   0          59m
-kubernetes-bootcamp-69bf88c8c-qsg95   1/1       Terminating   0          59m
-kubernetes-bootcamp-b9cdd8865-bzqdf   1/1       Running       0          34s
-kubernetes-bootcamp-b9cdd8865-jrkdm   1/1       Running       0          23s
-kubernetes-bootcamp-b9cdd8865-r55qn   1/1       Running       0          40s
-myapp-pod                             1/1       Running       109        1d
+2-Verify an update (V1 to V2)
 
-vagrant@master:~$ kubectl get pods
-NAME                                  READY     STATUS    RESTARTS   AGE
-kubernetes-bootcamp-b9cdd8865-bzqdf   1/1       Running   0          51s
-kubernetes-bootcamp-b9cdd8865-jrkdm   1/1       Running   0          40s
-kubernetes-bootcamp-b9cdd8865-r55qn   1/1       Running   0          57s
-myapp-pod                             1/1       Running   109        1d
-vagrant@master:~$ 
+vagrant@master:~$ kubectl rollout status deployments/kubernetes-bootcamp
+deployment "kubernetes-bootcamp" successfully rolled out
+$
+vagrant@master:~$ kubectl describe pods
+Name:         kubernetes-bootcamp-7d6f8694b6-2h4c8
+Namespace:    default
+Priority:     0
+Node:         minikube/172.17.0.41
+Start Time:   Sun, 07 Jun 2020 16:25:14 +0000
+Labels:       pod-template-hash=7d6f8694b6
+              run=kubernetes-bootcamp
+Annotations:  <none>
+Status:       Running
+IP:           172.18.0.12
+IPs:
+  IP:           172.18.0.12
+Controlled By:  ReplicaSet/kubernetes-bootcamp-7d6f8694b6
+Containers:
+  kubernetes-bootcamp:
+    Container ID:   docker://7e7fa05fa3be2bee1f36a155608b85f5a9386ed7b8432b0f22e25de68fe380f1
+    Image:          jocatalin/kubernetes-bootcamp:v2
+    Image ID:       docker-pullable://jocatalin/kubernetes-bootcamp@sha256:fb1a3ced00cecfc1f83f18ab5cd14199e30adc1b49aa4244f5d65ad3f5feb2a5
 
--Verify an update (V1 to V2)
 vagrant@master:~$ kubectl describe services/kubernetes-bootcamp
 Name:                     kubernetes-bootcamp
 Namespace:                default
@@ -437,103 +627,155 @@ Labels:                   run=kubernetes-bootcamp
 Annotations:              <none>
 Selector:                 run=kubernetes-bootcamp
 Type:                     NodePort
-IP:                       10.106.4.223
+IP:                       10.111.102.71
 Port:                     <unset>  8080/TCP
 TargetPort:               8080/TCP
-NodePort:                 <unset>  32156/TCP
-Endpoints:                10.32.0.6:8080,10.32.0.7:8080,10.40.0.1:8080
+NodePort:                 <unset>  30434/TCP
+Endpoints:                172.18.0.10:8080,172.18.0.11:8080,172.18.0.12:8080 + 1 more...
 Session Affinity:         None
 External Traffic Policy:  Cluster
 Events:                   <none>
+$
 
+
+3-Rollback an update
+-Image V2 to V10
+vagrant@master:~$ kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=gcr.io/google-samples/kubernetes-bootcamp:v10
+deployment.apps/kubernetes-bootcamp image updated
+vagrant@master:~$ kubectl get deployments
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+kubernetes-bootcamp   3/4     2            3           33m
+vagrant@master:~$ kubectl get pods
+NAME                                   READY   STATUS             RESTARTS   AGE
+kubernetes-bootcamp-7d6f8694b6-2h4c8   1/1     Terminating        0          9m37s
+kubernetes-bootcamp-7d6f8694b6-4cjdr   1/1     Running            0          9m39s
+kubernetes-bootcamp-7d6f8694b6-7gwqp   1/1     Running            0          9m39s
+kubernetes-bootcamp-7d6f8694b6-kv4cp   1/1     Running            0          9m37s
+kubernetes-bootcamp-886577c5d-ktkdh    0/1     ImagePullBackOff   0          14s
+kubernetes-bootcamp-886577c5d-pl6mb    0/1     ImagePullBackOff   0          14s
 vagrant@master:~$ kubectl describe pods
 
--Rollback an update (V2 to V1)
 vagrant@master:~$ kubectl rollout undo deployments/kubernetes-bootcamp
-deployment.extensions/kubernetes-bootcamp
-vagrant@master:~$ kubectl get pods -o wide
-NAME                                  READY     STATUS             RESTARTS   AGE       IP          NODE      NOMINATED NODE
-kubernetes-bootcamp-69bf88c8c-gcl6p   1/1       Running            0          7s        10.32.0.5   node2     <none>
-kubernetes-bootcamp-69bf88c8c-wnzkx   1/1       Running            0          5s        10.40.0.3   node1     <none>
-kubernetes-bootcamp-69bf88c8c-xg5xz   1/1       Running            0          8s        10.40.0.2   node1     <none>
-kubernetes-bootcamp-b9cdd8865-bzqdf   1/1       Terminating        0          15m       10.40.0.1   node1     <none>
-kubernetes-bootcamp-b9cdd8865-jrkdm   1/1       Terminating        0          15m       10.32.0.7   node2     <none>
-kubernetes-bootcamp-b9cdd8865-r55qn   1/1       Terminating        0          15m       10.32.0.6   node2     <none>
+deployment.apps/kubernetes-bootcamp rolled back
+vagrant@master:~$ kubectl get pods
+NAME                                   READY   STATUS        RESTARTS   AGE
+kubernetes-bootcamp-7d6f8694b6-4cjdr   1/1     Running       0          10m
+kubernetes-bootcamp-7d6f8694b6-7gwqp   1/1     Running       0          10m
+kubernetes-bootcamp-7d6f8694b6-945nh   1/1     Running       0          4s
+kubernetes-bootcamp-7d6f8694b6-kv4cp   1/1     Running       0          10m
+kubernetes-bootcamp-886577c5d-ktkdh    0/1     Terminating   0          94s
 
-agrant@master:~$ kubectl get pods -o wide
-NAME                                  READY     STATUS    RESTARTS   AGE       IP          NODE      NOMINATED NODE
-kubernetes-bootcamp-69bf88c8c-gcl6p   1/1       Running   0          1m        10.32.0.5   node2     <none>
-kubernetes-bootcamp-69bf88c8c-wnzkx   1/1       Running   0          1m        10.40.0.3   node1     <none>
-kubernetes-bootcamp-69bf88c8c-xg5xz   1/1       Running   0          1m        10.40.0.2   node1     <none>
-myapp-pod                             1/1       Running   112        1d        10.32.0.4   node2     <none>
+vagrant@master:~$ kubectl get pods
+NAME                                   READY   STATUS    RESTARTS   AGE
+kubernetes-bootcamp-7d6f8694b6-4cjdr   1/1     Running   0          11m
+kubernetes-bootcamp-7d6f8694b6-7gwqp   1/1     Running   0          11m
+kubernetes-bootcamp-7d6f8694b6-945nh   1/1     Running   0          17s
+kubernetes-bootcamp-7d6f8694b6-kv4cp   1/1     Running   0          11m
+vagrant@master:~$ kubectl describe pods
 
-vagrant@master:~$ kubectl describe pods -l run=kubernetes-bootcamp
-Name:               kubernetes-bootcamp-69bf88c8c-gcl6p
-Namespace:          default
-Priority:           0
-PriorityClassName:  <none>
-Node:               node2/10.0.0.12
-Start Time:         Fri, 14 Sep 2018 01:04:31 +0000
-Labels:             pod-template-hash=256944747
-                    run=kubernetes-bootcamp
-Annotations:        <none>
-Status:             Running
-IP:                 10.32.0.5
-Controlled By:      ReplicaSet/kubernetes-bootcamp-69bf88c8c
-Containers:
-  kubernetes-bootcamp:
-    Container ID:   docker://571fa4c690eeed4139c10dbb0321cd4921d7605ae2f89862f5050a0acc5bb955
-    Image:          gcr.io/google-samples/kubernetes-bootcamp:v1
-    Image ID:       docker-pullable://gcr.io/google-samples/kubernetes-bootcamp@sha256:0d6b8ee63bb57c5f5b6156f446b3bc3b3c143d233037f3a2f00e279c8fcc64af
-    Port:           8080/TCP
-    Host Port:      0/TCP
-    State:          Running
-      Started:      Fri, 14 Sep 2018 01:04:32 +0000
-    Ready:          True
-    Restart Count:  0
-    Environment:    <none>
-    Mounts:
-      /var/run/secrets/kubernetes.io/serviceaccount from default-token-6dtkp (ro)
-Conditions:
-  Type              Status
-  Initialized       True 
-  Ready             True 
-  ContainersReady   True 
-  PodScheduled      True 
-Volumes:
-  default-token-6dtkp:
-    Type:        Secret (a volume populated by a Secret)
-    SecretName:  default-token-6dtkp
-    Optional:    false
-QoS Class:       BestEffort
-Node-Selectors:  <none>
-Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
-                 node.kubernetes.io/unreachable:NoExecute for 300s
-Events:
-  Type    Reason     Age   From               Message
-  ----    ------     ----  ----               -------
-  Normal  Scheduled  4m    default-scheduler  Successfully assigned default/kubernetes-bootcamp-69bf88c8c-gcl6p to node2
-  Normal  Pulled     4m    kubelet, node2     Container image "gcr.io/google-samples/kubernetes-bootcamp:v1" already present on machine
-  Normal  Created    4m    kubelet, node2     Created container
-  Normal  Started    4m    kubelet, node2     Started container
 
+-Image V2 to V1
+vagrant@master:~$ kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=gcr.io/google-samples/kubernetes-bootcamp:v1
+deployment.apps/kubernetes-bootcamp image updated
+vagrant@master:~$  kubectl get podsNAME                                   READY   STATUS        RESTARTS   AGE
+kubernetes-bootcamp-765bf4c7b4-5jnx7   1/1     Running       0          4s
+kubernetes-bootcamp-765bf4c7b4-9c6wc   1/1     Running       0          7s
+kubernetes-bootcamp-765bf4c7b4-pw9fl   1/1     Running       0          7s
+kubernetes-bootcamp-765bf4c7b4-srhxb   1/1     Running       0          4s
+kubernetes-bootcamp-7d6f8694b6-4cjdr   1/1     Terminating   0          18m
+kubernetes-bootcamp-7d6f8694b6-7gwqp   1/1     Terminating   0          18m
+kubernetes-bootcamp-7d6f8694b6-876tj   0/1     Terminating   0          3m55s
+kubernetes-bootcamp-7d6f8694b6-kv4cp   1/1     Terminating   0          18m
+$
+vagrant@master:~$  kubectl get pods
+NAME                                   READY   STATUS    RESTARTS   AGE
+kubernetes-bootcamp-765bf4c7b4-5jnx7   1/1     Running   0          75s
+kubernetes-bootcamp-765bf4c7b4-9c6wc   1/1     Running   0          78s
+kubernetes-bootcamp-765bf4c7b4-pw9fl   1/1     Running   0          78s
+kubernetes-bootcamp-765bf4c7b4-srhxb   1/1     Running   0          75s
+$
+vagrant@master:~$ kubectl describe pods
 
 ********************************************************************
      Lab10 Working with Volumes
 ********************************************************************
+-Two classes of k8s volumes:
+-->In cluster Storage Server (ex. hostpath or local)
+https://kubernetes.io/docs/concepts/storage/volumes/#local
+https://kubernetes.io/docs/concepts/storage/volumes/#hostpath
+-->External Storage Server using CSI Provisioner (ex.Cloud or NFS)
+-Types of volumes :
+https://kubernetes.io/docs/concepts/storage/volumes/
 
--Working with Volume
-
--Use Case 1: External Storage Server (Cloud of NFS)
--Static Persistent volume claim (PVC)
+-Static and Dynamic Provisioning of volumes
+-->Static by using PersistentVolume and PersistentVolumeClaim (PVC)
 (exemple  GCE, AWS EBS, or using external NFS)
--Dynamic Provisioning with StorageClasses
+https://kubernetes.io/docs/concepts/storage/persistent-volumes/
+-->Dynamic Provisioning by using StorageClasses and PersistentVolumeClaim (PersistentVolume is Optional)
 (exemple using NFS client provisioner or Cloud client provisioner)
 
--Use Case 2 : In cluster Storage Server (NFS)
+1-Static Provisioning with Hostpath volumes
+vagrant@master:~$ cat hostpathex.yaml 
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mypv
+  labels:
+    type: local
+spec:
+  capacity:
+    storage: 500Mi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/tmp/mypv"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mypvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 300Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  containers:
+    - name: myfrontend
+      image: nginx
+      volumeMounts:
+      - mountPath: "/usr/share/nginx/html/"
+        name: mypd
+  volumes:
+    - name: mypd
+      persistentVolumeClaim:
+        claimName: mypvc
+vagrant@master:~$ kubectl apply -f hostpathex.yaml
 
-1-Static Persistent volume claim (PVC)
-
+-->using selector/matchLabels:
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mypvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 300Mi
+  selector:
+    matchLabels:
+      type: "local"
+---
+2-Static Provisioning with NFS
+https://github.com/kubernetes/examples/tree/master/staging/volumes
 ---->Prerequisites
 SSH in to each node and install the nfs-common OS package (e.g. sudo apt-get update && sudo apt-get -y install nfs-common)
 ---->Create NFS server Pod
@@ -601,9 +843,6 @@ vagrant@node2:~$ exit
 logout
 Connection to node2 closed.
 
-
-
-
 ---->Create Pod using our NFS server
 vagrant@master:~$ kubectl get service
 NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)                      AGE
@@ -669,7 +908,7 @@ create new file
 vagrant@node2:~$ 
 
 
-2-Dynamic Volumes using the NFS Provisioner
+3-Dynamic Provisioning using the NFS Provisioner StorageClass
 
 
 ###Stateful Applications: Deploying WordPress and MySQL with NFS Dynamic Volumes###
@@ -711,6 +950,7 @@ metadata:
   labels:
     type: local
 spec:
+  persistentVolumeReclaimPolicy: Recycle
   storageClassName: default-storage
   capacity:
     storage: 500Mi
