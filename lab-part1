@@ -34,6 +34,7 @@ $git clone https://github.com/walidsaad/Mosaico3.git
 
 3-Prepare the Cluster with Vagrant
 
+Note: may be you need to create a HostOnly Network with VirtualBox (10.0.0.1/16, mask 255.255.0.0, min@ 10.0.0.2, max@ 10.0.255.254)
 $ cd Mosaico3/servers/vbox
 $ vagrant up
 Bringing machine 'kmaster' up with 'virtualbox' provider...
