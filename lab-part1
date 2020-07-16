@@ -18,10 +18,12 @@ https://labs.play-with-k8s.com/
 
 -For ubuntu:
 sudo apt-get update
-wget https://releases.hashicorp.com/vagrant/2.1.4/vagrant_2.1.4_x86_64.deb
-dpkg -i vagrant_2.1.4_x86_64.deb
-apt-get install python2.7 python2.7-dev python-pip
-pip install ansible
+$ wget https://releases.hashicorp.com/vagrant/2.1.4/vagrant_2.1.4_x86_64.deb
+$ sudo dpkg -i vagrant_2.1.4_x86_64.deb
+$ sudo apt-get install python2.7 python2.7-dev python-pip
+$ sudo apt install software-properties-common
+$ sudo apt-add-repository --yes --update ppa:ansible/ansible
+$ sudo apt install ansible
 
 -For Centos :
 sudo yum -y install https://releases.hashicorp.com/vagrant/2.1.4/vagrant_2.1.4_x86_64.rpm (https://releases.hashicorp.com/vagrant/2.1.4/)
@@ -45,10 +47,10 @@ walid@walidos:~/Mosaico3/servers/vbox$ chmod 600 ~/.ssh/config
 
 5-Eidt the /etc/hosts file
 $ sudo vim /etc/hosts
-127.0.0.1 master node1 node2
+127.0.0.1 master node1 node2 bastion
  
-6-Install Kubernestes with Ansible
-
+6-Install Kubernestes with Ansible (from bastion host : vm or bare metal)
+Note: if you are uing a bastion host you should connect with ssh to it, clone the repository and play ansible playbook to install k8s as below.
 $ cd ../../kubernetes
 $ cat inventory
 [masters]
@@ -56,7 +58,6 @@ master
 [nodes]
 node1
 node2
-
 
 $ ansible-playbook site.yml
 .....................................
