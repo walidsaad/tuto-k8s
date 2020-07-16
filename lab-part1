@@ -17,10 +17,13 @@ https://labs.play-with-k8s.com/
 1-Install dependencies :
 
 -For ubuntu:
-sudo apt-get update
+Install Vagrant
+$ sudo apt update
 $ wget https://releases.hashicorp.com/vagrant/2.1.4/vagrant_2.1.4_x86_64.deb
 $ sudo dpkg -i vagrant_2.1.4_x86_64.deb
-$ sudo apt-get install python2.7 python2.7-dev python-pip
+Install Python
+$ sudo apt install python2.7 python2.7-dev python-pip
+Install ansible (https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
 $ sudo apt install software-properties-common
 $ sudo apt-add-repository --yes --update ppa:ansible/ansible
 $ sudo apt install ansible
@@ -30,7 +33,7 @@ sudo yum -y install https://releases.hashicorp.com/vagrant/2.1.4/vagrant_2.1.4_x
 sudo yum install git ansible
 
 2-Download Git Repository (Vagrant+Ansible)
-$git clone https://github.com/walidsaad/Mosaico3.git
+$ git clone https://github.com/walidsaad/Mosaico3.git
 
 3-Prepare the Cluster with Vagrant
 
